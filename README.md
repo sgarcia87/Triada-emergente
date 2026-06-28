@@ -117,17 +117,6 @@ n\equiv0\pmod8.
 
 ---
 
-## Contenido del repositorio
-
-- `README.md`
-- `estructura_triadica_4D.md` — monografía completa.
-- `nota_triadica_paper.md` — versión resumida.
-- `index.html` — visualizador interactivo.
-- `python/` — scripts de verificación.
-- `results/` — resultados reproducibles.
-
----
-
 ## Alcance
 
 Este trabajo **no propone nuevos objetos matemáticos individuales**. Los objetos implicados (Hadamard, Johnson, \(A_3\), \(B_3\), grafos de Cayley, etc.) son clásicos.
