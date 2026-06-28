@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Estructura Triádica — Visualizador del marco general</title>
+<style>
+:root{
+  --bg:#070a10;--panel:#111827;--text:#e5e7eb;--muted:#9ca3af;
+  --blue:#60a5fa;--red:#fb7185;--green:#34d399;--violet:#c084fc;
+  --yellow:#fbbf24;--orange:#fb923c;--cyan:#22d3ee;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;overflow:hidden;
+  background:radial-gradient(circle at 50% 0%,#172033 0,#070a10 62%,#03050a 100%);
+  color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif;
+}
+canvas{display:block;width:100vw;height:100vh;cursor:grab}
+canvas:active{cursor:grabbing}
+.panel{
+  position:fixed;left:16px;top:16px;width:440px;max-width:calc(100vw - 32px);
+  max-height:calc(100vh - 32px);overflow:auto;
+  background:rgba(17,24,39,.93);border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;padding:14px;box-shadow:0 22px 60px rgba(0,0,0,.55);
+  backdrop-filter:blur(12px);
+  transition:transform .24s ease, opacity .24s ease;
+  z-index:20;
+}
+.panel.hidden{
+  transform:translateX(calc(-100% - 28px));
+  opacity:0;
+  pointer-events:none;
+}
+.menuToggle{
+  position:fixed;left:16px;top:16px;z-index:25;
+  width:42px;height:42px;border-radius:13px;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(17,24,39,.92);border:1px solid rgba(255,255,255,.16);
+  color:var(--text);box-shadow:0 12px 34px rgba(0,0,0,.45);
+  backdrop-filter:blur(10px);font-size:18px;line-height:1;
+}
+.menuToggle.panelOpen{left:472px}
+@media(max-width:520px){.menuToggle.panelOpen{left:auto;right:16px}}
+h1{font-size:18px;margin:0 0 5px}
+.sub{font-size:12px;color:var(--muted);line-height:1.35;margin-bottom:10px}
+.formula{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.45;
+  background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;padding:9px;color:#dbeafe;margin:9px 0
+}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:8px 0}
+button,label{
+  border:1px solid rgba(255,255,255,.14);background:rgba(31,41,55,.9);color:var(--text);
+  border-radius:11px;padding:8px 9px;font-size:12px;cursor:pointer;user-select:none
+}
+button:hover,label:hover{background:rgba(55,65,81,.94)}
+button.active{background:rgba(37,99,235,.45);border-color:rgba(96,165,250,.85)}
+button.special{background:rgba(20,184,166,.25);border-color:rgba(45,212,191,.45)}
+label{display:flex;gap:7px;align-items:center}
+input{accent-color:var(--blue)}
+.kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.kpi div{
+  background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);
+  border-radius:10px;padding:7px;text-align:center;font-size:11px;color:#cbd5e1
+}
+.kpi b{display:block;color:#fff;font-size:15px}
+.stepbox{
+  margin-top:8px;border-top:1px solid rgba(255,255,255,.1);padding-top:9px;
+  font-size:12px;color:#d1d5db;line-height:1.45
+}
+.stepTitle{color:#fff;font-weight:700;margin-bottom:3px}
+.explainCard{
+  margin-top:9px;background:rgba(0,0,0,.22);border:1px solid rgba(255,255,255,.10);
+  border-radius:14px;padding:10px;
+}
+.proofCard{
+  margin-top:9px;background:rgba(3,7,18,.34);border:1px solid rgba(34,211,238,.22);
+  border-radius:14px;padding:10px;display:none;
+}
+.proofCard.active{display:block}
+.explainTitle{font-size:12px;font-weight:700;color:#fff;margin-bottom:5px}
+.explainSimple{font-size:12px;line-height:1.45;color:#d1d5db}
+.explainMath{
+  margin-top:8px;font-size:12px;line-height:1.42;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#dbeafe
+}
+.small{font-size:11px;color:var(--muted);line-height:1.35;margin-top:8px}
+.legend{
+  position:fixed;right:16px;bottom:16px;max-width:400px;
+  background:rgba(17,24,39,.88);border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;padding:12px;font-size:12px;line-height:1.55
+}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.top{
+  position:fixed;right:16px;top:16px;max-width:520px;
+  background:rgba(8,11,16,.7);border:1px solid rgba(255,255,255,.1);
+  border-radius:16px;padding:11px 13px;font-size:12px;color:var(--muted);line-height:1.45
+}
+.tip{
+  position:fixed;pointer-events:none;display:none;background:rgba(0,0,0,.84);
+  border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:7px 9px;
+  font-size:12px;color:#fff;max-width:320px
+}
+.chain{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#dbeafe}
+.badge{
+  display:inline-block;border:1px solid rgba(255,255,255,.12);border-radius:999px;
+  padding:2px 7px;margin:2px;background:rgba(255,255,255,.05);font-size:11px;
+}
+.progress{display:grid;grid-template-columns:repeat(16,1fr);gap:4px;margin:8px 0 10px}.progress span{height:7px;border-radius:99px;background:rgba(148,163,184,.25)}.progress span.active{background:var(--blue)}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<button id="menuToggle" class="menuToggle panelOpen" title="Ocultar/mostrar menú">☰</button>
+
+<div class="panel" id="panel">
+  <h1>Estructura Triádica</h1>
+  <div class="sub">
+    Recorrido: espacio → restricciones → órbitas → simetría → caso excepcional n=4. Incluye marco general, átomos de Venn, n=4/8/12/16, B₃, Cayley y comparación relacional.
+  </div>
+
+  <div class="formula" id="mainFormula">
+    n=4m → órbitas de Sₙ<br/>
+    |Oₜ|=n!/((t!)⁴((m−t)!)⁴)<br/>
+    caso n=4: P₄₈≅B₃
+  </div>
+
+  <div class="progress" id="progress"></div>
+
+  <div class="grid">
+    <button id="intro" class="active">0 · Espacio → 48</button>
+    <button id="general">1 · Marco general</button>
+    <button id="venn">2 · Átomos de Venn</button>
+    <button id="dependencies">3 · Dependencias</button>
+    <button id="chain">4 · Cadena n=4</button>
+    <button id="octa">5 · Octaedro Δ(4,2)</button>
+    <button id="hadamard">6 · Hadamard/B₃</button>
+    <button id="tetra">7 · T ∪ (−T)</button>
+    <button id="dual">8 · Cubo dual Q₃</button>
+    <button id="cayley">9 · Cayley B₃</button>
+    <button id="evidence">10 · Resultados</button>
+    <button id="q4">11 · Q₄ × 3 capas</button>
+    <button id="tesseracts">12 · Tres teseractos</button>
+    <button id="relational">13 · Relacional</button>
+    <button id="compare">14 · A⁻¹B</button>
+    <button id="final">15 · Síntesis</button>
+  </div>
+
+  <div class="grid3">
+    <button id="prev">◀ Paso</button>
+    <button id="next">Paso ▶</button>
+    <button id="png">PNG</button>
+  </div>
+
+  <div class="grid3">
+    <button id="observer" class="special">Cambiar observador</button>
+    <button id="whyToggle" class="special">¿Por qué?</button>
+    <button id="reset">Reset vista</button>
+  </div>
+
+  <label><input id="labels" type="checkbox" checked/>Etiquetas</label>
+  <label><input id="autorot" type="checkbox" checked/>Rotación automática</label>
+  <label><input id="formulaToggle" type="checkbox" checked/>Fórmula central</label>
+  <label><input id="showInternal" type="checkbox" checked/>Aristas internas: flips</label>
+  <label><input id="showExternal" type="checkbox" checked/>Aristas externas: swaps</label>
+
+  <div class="kpi">
+    <div><b>48</b>estados</div>
+    <div><b>144</b>aristas</div>
+    <div><b>3456</b>automorfismos</div>
+  </div>
+
+  <div class="stepbox">
+    <div class="stepTitle" id="stepTitle">Paso 0 — Espacio total → 48</div>
+    <div id="stepText">El recorrido empieza en el espacio completo y muestra cómo las restricciones seleccionan 48 estados.</div>
+  </div>
+
+  <div class="explainCard">
+    <div class="explainTitle">Qué hacemos · Qué aparece · Expresión matemática</div>
+    <div class="explainSimple" id="simpleExplain"></div>
+    <div class="explainMath" id="mathExplain"></div>
+  </div>
+
+  <div class="proofCard" id="proofCard">
+    <div class="explainTitle">Por qué funciona</div>
+    <div class="explainSimple" id="proofExplain"></div>
+  </div>
+
+  <div class="small">
+    Arrastra para rotar. Shift + arrastrar o botón derecho para mover la vista. Rueda para zoom. En Cayley puedes ocultar aristas internas/externas. Usa “¿Por qué?” para ver la lógica de cada paso.
+  </div>
+</div>
+
+<div class="top">
+  <b>Principio:</b><br>
+  <span class="chain">espacio → restricción → órbitas → simetría → geometría</span>
+  <br>
+  <span class="badge">n=4m</span>
+  <span class="badge">órbitas Sₙ</span>
+  <span class="badge">Venn</span>
+  <span class="badge">P₄₈≅B₃</span>
+</div>
+
+<div class="legend" id="legend"></div>
+<div class="tip" id="tip"></div>
+
+<script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d'),tip=document.getElementById('tip'),legend=document.getElementById('legend');
+let W,H,DPR,rx=-.55,ry=.68,zoom=1,panX=0,panY=0,drag=false,dragMode='rotate',lx=0,ly=0,mx=0,my=0,mode='intro',step=0,hover=null,observerPhase=0,comparePhase=0;
+const panel=document.getElementById('panel');
+const menuToggle=document.getElementById('menuToggle');
+let panelVisible=true;
+menuToggle.onclick=()=>{
+  panelVisible=!panelVisible;
+  panel.classList.toggle('hidden',!panelVisible);
+  menuToggle.classList.toggle('panelOpen',panelVisible);
+  menuToggle.textContent=panelVisible?'×':'☰';
+  menuToggle.title=panelVisible?'Ocultar menú':'Mostrar menú';
+};
+menuToggle.textContent='×';
+
+
+function resize(){
+  DPR=devicePixelRatio||1;W=innerWidth;H=innerHeight;
+  canvas.width=W*DPR;canvas.height=H*DPR;
+  canvas.style.width=W+'px';canvas.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0)
+}
+addEventListener('resize',resize);resize();
+
+canvas.oncontextmenu=e=>e.preventDefault();
+canvas.onmousedown=e=>{
+  drag=true;lx=e.clientX;ly=e.clientY;
+  dragMode=(e.button===2 || e.shiftKey || e.ctrlKey || e.metaKey) ? 'pan' : 'rotate';
+  if(dragMode==='rotate'){
+    const ar=document.getElementById('autorot');
+    if(ar) ar.checked=false;
+  }
+};
+addEventListener('mouseup',()=>drag=false);
+addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  if(drag){
+    const dx=e.clientX-lx, dy=e.clientY-ly;
+    if(dragMode==='pan' || e.shiftKey || e.ctrlKey || e.metaKey){
+      panX+=dx;panY+=dy;
+    }else{
+      ry+=dx*.008;rx+=dy*.008;
+    }
+    lx=e.clientX;ly=e.clientY;
+  }
+});
+canvas.onwheel=e=>{
+  e.preventDefault();
+  zoom*=Math.exp(-e.deltaY*.001);
+  zoom=Math.max(.35,Math.min(3.5,zoom));
+};
+
+const modes=['intro','general','venn','dependencies','chain','octa','hadamard','tetra','dual','cayley','evidence','q4','tesseracts','relational','compare','final'];
+const progress=document.getElementById('progress');
+if(progress){for(let i=0;i<modes.length;i++){const s=document.createElement('span');progress.appendChild(s)}}
+modes.forEach(id=>document.getElementById(id).onclick=()=>setMode(id));
+function setMode(m){
+  mode=m;
+  modes.forEach(id=>document.getElementById(id).classList.toggle('active',id===m));
+  updateStepByMode()
+}
+
+document.getElementById('prev').onclick=()=>{step=(step+modes.length-1)%modes.length;applyStep()};
+document.getElementById('next').onclick=()=>{step=(step+1)%modes.length;applyStep()};
+document.getElementById('png').onclick=()=>{
+  const a=document.createElement('a');a.download='triadic_structure_3d.png';a.href=canvas.toDataURL('image/png');a.click()
+};
+document.getElementById('observer').onclick=()=>{observerPhase=(observerPhase+1)%6;ry+=Math.PI/5;rx+=Math.PI/16};
+document.getElementById('reset').onclick=()=>{rx=-.55;ry=.68;zoom=1;panX=0;panY=0;observerPhase=0};
+let proofVisible=false;
+document.getElementById('whyToggle').onclick=()=>{
+  proofVisible=!proofVisible;
+  document.getElementById('proofCard').classList.toggle('active', proofVisible);
+  document.getElementById('whyToggle').classList.toggle('active', proofVisible);
+  updateProofText();
+};
+
+const data={
+intro:{
+  title:'Paso 0 — Espacio total → 48',
+  text:'El recorrido empieza en el espacio completo y muestra cómo las restricciones seleccionan 48 estados.',
+  simple:'Partimos de tres bloques de cuatro signos. Eso da 4096 configuraciones. Al imponer equilibrio y ortogonalidad, sobreviven exactamente 48 estados. Esos 48 son el caso excepcional n=4.',
+  math:'(Q₄)³ = 16³ = 4096 → MMᵀ=4I → P₄₈≅B₃',
+},
+general:{
+  title:'Paso 1 — Marco general de órbitas',
+  text:'La teoría general clasifica tríadas equilibradas y ortogonales mediante órbitas de Sₙ.',
+  simple:'El caso 4D ya no es una observación aislada. Forma parte de una familia: para n múltiplo de 4, las tríadas se clasifican por un número t, la triple intersección de A, B y C.',
+  math:'n=4m; |A|=|B|=|C|=n/2; |A∩B|=|A∩C|=|B∩C|=m; |O_t|=n!/((t!)⁴((m−t)!)⁴)',
+},
+venn:{
+  title:'Paso 2 — Átomos de Venn y órbita uniforme',
+  text:'Los 8 átomos de Venn clasifican las órbitas.',
+  simple:'Tres conjuntos A, B y C dividen el universo en 8 regiones mínimas. En n=8 aparece una órbita especial donde cada región contiene exactamente un elemento: esa es la órbita uniforme y tiene tamaño 8!.',
+  math:'t=|A∩B∩C|; átomos=(t,m−t,m−t,m−t,t,t,t,m−t); uniforme ⇔ n≡0 mod 8',
+},
+dependencies:{
+  title:'Paso 3 — Árbol de dependencias',
+  text:'Muestra qué depende de qué dentro de la construcción.',
+  simple:'No todos los resultados están al mismo nivel. El espacio y las restricciones producen Hadamard; Hadamard produce P₄₈ en n=4; P₄₈ permite B₃, Cayley, Walsh y la formulación relacional. En paralelo, la teoría general produce las órbitas de Sₙ.',
+  math:'espacio + restricciones → Hadamard → P₄₈ → B₃ → Cayley; 𝒯ₙ → 𝒯ₙ/Sₙ={0,…,m}',
+},
+chain:{
+  title:'Paso 4 — Cadena n=4',
+  text:'Recorrido específico del caso n=4.',
+  simple:'Se parte de una regla local sobre signos +1 y −1 y se obtiene una cadena de estructuras: equilibrio, octaedro, Hadamard, B₃ y grafo de Cayley.',
+  math:'2/2 → Δ(4,2) → MMᵀ=4I → P₄₈≅B₃ → Cay(B₃,S)≅Q₃□K₃,₃',
+},
+octa:{
+  title:'Paso 5 — Equilibrio 2/2 → Octaedro Δ(4,2)',
+  text:'Si tenemos cuatro posiciones y cada una puede ser +1 o −1, existen 16 combinaciones posibles. Solo 6 tienen exactamente dos +1 y dos −1.',
+  simple:'Cada bloque tiene exactamente dos signos + y dos signos −. Esa es la forma más equilibrada posible dentro de cuatro posiciones. Al representar los seis bloques equilibrados, aparece un octaedro.',
+  math:'u·H=0, H∈{−1,+1}⁴ ⇒ u⊥∩{−1,+1}⁴ = Δ(4,2) ≅ Octaedro',
+},
+hadamard:{
+  title:'Paso 6 — Hadamard y grupo B₃',
+  text:'Al añadir u=(1,1,1,1), las tres filas perfectas completan una matriz Hadamard. Las 48 tríadas realizan B₃.',
+  simple:'Se buscan tres configuraciones equilibradas y ortogonales entre sí. Hay exactamente 48 tríadas, y se identifican con B₃.',
+  math:'M=(u,H₁,H₂,H₃), MMᵀ=4I₄ ⇔ (H₁,H₂,H₃)∈P₄₈, P₄₈≅B₃',
+},
+tetra:{
+  title:'Paso 7 — Dos tetraedros opuestos',
+  text:'Las 8 familias de tríadas se separan en dos grupos simétricos: un tetraedro y su opuesto.',
+  simple:'Las 8 familias se agrupan en dos conjuntos de 4. Cada conjunto forma un tetraedro, y ambos son opuestos.',
+  math:'8 familias = T∪(−T), dos tetraedros regulares opuestos en x₁+x₂+x₃+x₄=0',
+},
+dual:{
+  title:'Paso 8 — Cubo dual Q₃',
+  text:'Se relacionan las 8 familias entre sí.',
+  simple:'Se relacionan las 8 familias entre sí. El grafo resultante es el cubo Q₃.',
+  math:'caras(Octaedro) ↔ vértices(Cubo), Q₃ = grafo relacional entre familias',
+},
+cayley:{
+  title:'Paso 9 — Grafo de Cayley',
+  text:'Los 48 estados se conectan mediante 6 movimientos elementales: 3 flips y 3 swaps.',
+  simple:'Se conectan los 48 estados mediante seis generadores: tres flips y tres swaps. El grafo tiene 48 nodos y 144 aristas.',
+  math:'S={flip_X,flip_Y,flip_Z,swap_XY,swap_XZ,swap_YZ}; Cay(B₃,S)≅Q₃□K₃,₃',
+},
+evidence:{
+  title:'Paso 10 — Resultados verificados',
+  text:'Controles combinatorios, espectrales y algebraicos.',
+  simple:'Se comparan los 48 estados con conjuntos aleatorios y controles que preservan simetrías parciales. También se calcula el grupo de automorfismos y las órbitas de aristas.',
+  math:'Walsh k=6: 58.5%, z=39.84; control mínimo z=8.78; |Aut(Q₃□K₃,₃)|=3456; 2 órbitas de aristas',
+},
+q4:{
+  title:'Paso 11 — Indexación Q₄ × 3 capas',
+  text:'Los 48 estados también admiten una indexación natural como 16×3: un Q₄ por cada una de tres capas internas.',
+  simple:'Los 48 estados se ordenan como tres capas de 16. Cada capa corresponde a un hipercubo Q₄.',
+  math:'48 = 16×3 = Q₄ × 3 capas; Q₄ = Q₃ × P₂',
+},
+tesseracts:{
+  title:'Paso 12 — Tres teseractos con origen común',
+  text:'La lectura 12D se muestra como tres teseractos acoplados sobre un mismo origen. Cada Q₄ aporta cuatro coordenadas binarias.',
+  simple:'El modelo parte de tres bloques H₁, H₂ y H₃. Cada bloque vive en un Q₄. El producto de los tres da 4096 configuraciones posibles; el filtro Hadamard selecciona exactamente 48 estados perfectos.',
+  math:'H₁∈Q₄¹, H₂∈Q₄², H₃∈Q₄³; (H₁,H₂,H₃)∈(Q₄)³; 16³=4096 → MMᵀ=4I → P₄₈',
+},
+relational:{
+  title:'Paso 13 — Formulación relacional',
+  text:'Se toman las comparaciones como dato primario.',
+  simple:'Se toman las comparaciones como dato primario. Con una raíz, esas comparaciones reconstruyen los estados.',
+  math:'C(A,B)=A⁻¹B; C(A,B)C(B,D)=C(A,D); relaciones + raíz → B₃ → P₄₈',
+},
+compare:{
+  title:'Paso 14 — Comparador A⁻¹B',
+  text:'Se compara B respecto a una referencia A.',
+  simple:'Se compara B respecto a una referencia A mediante A⁻¹B.',
+  math:'C(LA,LB)=(LA)⁻¹(LB)=A⁻¹B; la comparación es invariante al cambio común de observador',
+},
+final:{
+  title:'Paso 15 — Síntesis final',
+  text:'Cierre: qué se ha demostrado en el visualizador.',
+  simple:'El recorrido completo muestra una familia general de tríadas, una clasificación por órbitas, la completitud del invariante t y el caso excepcional n=4 con Hadamard, B₃ y Cayley.',
+  math:'𝒯ₙ/Sₙ={0,…,m}; t completo; n=4: P₄₈≅B₃; Cay(B₃,S)≅Q₃□K₃,₃',
+}
+};
+
+const proofTexts={
+  intro:'Se parte de 16³ configuraciones. La condición MMᵀ=4I exige que u,H₁,H₂,H₃ sean ortogonales. Eso fuerza equilibrio respecto a u y ortogonalidad mutua entre H₁,H₂,H₃. En n=4 quedan exactamente 48 configuraciones.',
+  general:'Al representar cada vector equilibrado por A⊂[n] con |A|=n/2, la ortogonalidad equivale a |A∩B|=n/4. Para n=4m, toda tríada queda determinada, hasta permutación de coordenadas, por t=|A∩B∩C|.',
+  venn:'Los tres conjuntos A,B,C dividen [n] en 8 átomos. Las condiciones de tamaño e intersección fuerzan los tamaños (t,m−t,m−t,m−t,t,t,t,m−t). Por eso t clasifica las órbitas.',
+  dependencies:'El árbol separa resultados primarios y derivados. Las restricciones producen Hadamard; Hadamard selecciona P₄₈; P₄₈ se identifica con B₃; B₃ genera el grafo de Cayley. La rama general clasifica 𝒯ₙ bajo Sₙ.',
+  chain:'En n=4, equilibrio 2/2 da Δ(4,2), que es un octaedro. Las bases ortogonales ordenadas de ese octaedro son las 48 tríadas. Después se identifican con B₃.',
+  octa:'Los seis vectores con dos + y dos − son exactamente u⊥∩{−1,+1}⁴. Sus productos escalares son 0 o −4, formando tres pares antipodales: la geometría de un octaedro.',
+  hadamard:'La matriz M con filas u,H₁,H₂,H₃ cumple MMᵀ=4I si y solo si todas las filas son ortogonales. Las condiciones originales son exactamente esas entradas fuera de la diagonal igual a cero.',
+  tetra:'La suma F=H₁+H₂+H₃ tiene una coordenada ±3 y tres coordenadas opuestas ∓1. Esos ocho vectores son dos tetraedros regulares opuestos.',
+  dual:'Las 8 familias corresponden a caras del octaedro. La relación entre caras opuestas no antipodales produce K₄,₄ menos un emparejamiento, que es Q₃.',
+  cayley:'Los 48 estados son elementos de B₃. Los tres flips y tres swaps son generadores naturales. El grafo de Cayley resultante tiene 48 vértices y 144 aristas y coincide con Q₃□K₃,₃.',
+  evidence:'La firma Walsh, el grupo de automorfismos y las dos órbitas de aristas se calculan sobre el objeto ya construido. No definen la estructura; la verifican desde perspectivas independientes.',
+  q4:'El Q₄ final no es el Q₄ inicial de bloques. Es una indexación: Q₃ de familias más un bit de polaridad interna de K₃,₃, repetido en 3 capas.',
+  tesseracts:'Cada bloque Hᵢ vive en un Q₄ inicial. El producto de tres bloques da (Q₄)³=4096. La condición Hadamard filtra ese espacio y deja P₄₈.',
+  relational:'En un grupo, A⁻¹B es la transformación que lleva A a B. Cumple cociclo, simetría inversa e invariancia por cambio común de referencia.',
+  compare:'Si cambiamos simultáneamente de observador por L, entonces (LA)⁻¹(LB)=A⁻¹B. La comparación se conserva aunque cambien las coordenadas absolutas.',
+  final:'El visualizador reúne los resultados demostrados: definición de 𝒯ₙ, clasificación por Sₙ, completitud de t, dualidad por complemento y el caso n=4 con Hadamard, B₃ y Cayley.'
+};
+function updateProofText(){
+  const el=document.getElementById('proofExplain');
+  if(!el)return;
+  el.textContent=proofTexts[mode]||'Este paso se deriva de las definiciones y de los teoremas anteriores.';
+}
+
+function updateStepByMode(){step=modes.indexOf(mode);applyStep(false)}
+function applyStep(change=true){
+  if(change)setMode(modes[step]);
+  const d=data[modes[step]];
+  document.getElementById('stepTitle').textContent=d.title;
+  document.getElementById('stepText').textContent=d.text;
+  document.getElementById('simpleExplain').textContent=d.simple;
+  document.getElementById('mathExplain').textContent=d.math;
+  updateProofText();
+  document.querySelectorAll('#progress span').forEach((s,i)=>s.classList.toggle('active',i===step));
+}
+applyStep(false);
+
+// Geometry data
+const octa=[
+  ['+X',[1.4,0,0],'#60a5fa','bloque equilibrado +X'],
+  ['-X',[-1.4,0,0],'#2563eb','bloque equilibrado -X'],
+  ['+Y',[0,1.4,0],'#34d399','bloque equilibrado +Y'],
+  ['-Y',[0,-1.4,0],'#059669','bloque equilibrado -Y'],
+  ['+Z',[0,0,1.4],'#fbbf24','bloque equilibrado +Z'],
+  ['-Z',[0,0,-1.4],'#d97706','bloque equilibrado -Z']
+].map(x=>({id:x[0],p:x[1],color:x[2],info:x[3]}));
+const octaEdges=[];
+for(let i=0;i<6;i++)for(let j=i+1;j<6;j++){
+  const a=octa[i].p,b=octa[j].p,d=a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+  if(Math.abs(d+1.96)>1e-6)octaEdges.push([i,j])
+}
+const cube=[];
+for(const sx of[-1,1])for(const sy of[-1,1])for(const sz of[-1,1]){
+  cube.push({id:`${sx>0?'+':'-'}${sy>0?'+':'-'}${sz>0?'+':'-'}`,p:[sx,sy,sz],color:sx*sy*sz>0?'#c084fc':'#fb7185',info:'familia/orientación'})
+}
+const cubeEdges=[];
+for(let i=0;i<8;i++)for(let j=i+1;j<8;j++){
+  let d=0;for(let k=0;k<3;k++)if(cube[i].p[k]!==cube[j].p[k])d++;
+  if(d===1)cubeEdges.push([i,j])
+}
+const tetraEdges=[];
+for(let i=0;i<8;i++)for(let j=i+1;j<8;j++){
+  if(cube[i].p[0]*cube[i].p[1]*cube[i].p[2]===cube[j].p[0]*cube[j].p[1]*cube[j].p[2])tetraEdges.push([i,j])
+}
+const cay=[];
+function idx(o,p){return o*6+p}
+for(let o=0;o<8;o++){
+  let ang=2*Math.PI*o/8;
+  for(let p=0;p<6;p++){
+    let r=2.65+(p%3)*.18,z=(p<3?.68:-.68)+(p%3-1)*.08;
+    cay.push({id:`F${o}-σ${p}`,p:[r*Math.cos(ang),r*Math.sin(ang),z],color:p<3?'#60a5fa':'#fb7185',info:`familia ${o}, permutación ${p}`})
+  }
+}
+const cayEdges=[],cayTypes=[];
+for(let o=0;o<8;o++)for(let bit=0;bit<3;bit++){
+  let oo=o^(1<<bit);
+  if(o<oo)for(let p=0;p<6;p++){cayEdges.push([idx(o,p),idx(oo,p)]);cayTypes.push('externa')}
+}
+for(let o=0;o<8;o++)for(let a=0;a<3;a++)for(let b=3;b<6;b++){cayEdges.push([idx(o,a),idx(o,b)]);cayTypes.push('interna')}
+
+function rot(p){
+  let[x,y,z]=p;
+  const phase=observerPhase*Math.PI/9;
+  let x0=x*Math.cos(phase)-y*Math.sin(phase),y0=x*Math.sin(phase)+y*Math.cos(phase);
+  x=x0;y=y0;
+  let cx=Math.cos(rx),sx=Math.sin(rx),cy=Math.cos(ry),sy=Math.sin(ry);
+  let y1=y*cx-z*sx,z1=y*sx+z*cx,x2=x*cy+z1*sy,z2=-x*sy+z1*cy;
+  return[x2,y1,z2]
+}
+function proj(p){
+  let[x,y,z]=rot(p),s=Math.min(W,H)*.18*zoom,pe=1/(1+z*.08);
+  return[W/2+panX+x*s*pe,H/2+panY+y*s*pe,z,pe]
+}
+function line(a,b,col,w=1.4){
+  ctx.strokeStyle=col;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke()
+}
+function arrow(a,b,col,w=2){
+  line(a,b,col,w);
+  const ang=Math.atan2(b[1]-a[1],b[0]-a[0]),len=10;
+  ctx.save();ctx.strokeStyle=col;ctx.lineWidth=w;ctx.beginPath();
+  ctx.moveTo(b[0],b[1]);
+  ctx.lineTo(b[0]-len*Math.cos(ang-.45),b[1]-len*Math.sin(ang-.45));
+  ctx.moveTo(b[0],b[1]);
+  ctx.lineTo(b[0]-len*Math.cos(ang+.45),b[1]-len*Math.sin(ang+.45));
+  ctx.stroke();ctx.restore()
+}
+function node(n,s,r){
+  ctx.beginPath();ctx.fillStyle=n.color;ctx.arc(s[0],s[1],r*s[3],0,7);ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.8)';ctx.lineWidth=1.3;ctx.stroke()
+}
+function label(t,s){
+  if(!document.getElementById('labels').checked)return;
+  ctx.fillStyle='#e5e7eb';ctx.font='12px system-ui';ctx.textAlign='center';
+  ctx.fillText(t,s[0],s[1]-13*s[3])
+}
+function draw(nodes,edges,types=null,r=8){
+  let sc=nodes.map(n=>proj(n.p));
+  edges.map((e,i)=>({e,i,z:(sc[e[0]][2]+sc[e[1]][2])/2})).sort((a,b)=>a.z-b.z).forEach(o=>{
+    let col='rgba(148,163,184,.52)',w=1.35;
+    if(types){
+      if(types[o.i]==='interna'&&!document.getElementById('showInternal').checked)return;
+      if(types[o.i]==='externa'&&!document.getElementById('showExternal').checked)return;
+      col=types[o.i]==='externa'?'rgba(96,165,250,.42)':'rgba(251,113,133,.40)';
+      w=1.05
+    }
+    line(sc[o.e[0]],sc[o.e[1]],col,w)
+  });
+  hover=null;
+  nodes.map((n,i)=>({n,i,z:sc[i][2]})).sort((a,b)=>a.z-b.z).forEach(o=>{
+    node(o.n,sc[o.i],r);label(o.n.id,sc[o.i]);
+    let dx=mx-sc[o.i][0],dy=my-sc[o.i][1];
+    if(dx*dx+dy*dy<(r+8)*(r+8))hover=o.n
+  });
+  return sc
+}
+function drawTextBox(lines, x, y, w){
+  ctx.save();
+  const h=lines.length*24+30;
+  ctx.fillStyle='rgba(15,23,42,.78)';ctx.strokeStyle='rgba(255,255,255,.16)';
+  ctx.lineWidth=1;ctx.beginPath();ctx.roundRect(x,y,w,h,16);ctx.fill();ctx.stroke();
+  ctx.font='14px ui-monospace,monospace';ctx.fillStyle='#dbeafe';ctx.textAlign='left';
+  lines.forEach((l,i)=>ctx.fillText(l,x+18,y+28+i*24));
+  ctx.restore()
+}
+
+function drawIntro(){
+  const tt=performance.now()*0.001;
+  // symbolic cloud of all 4096 states
+  ctx.save();
+  for(let i=0;i<360;i++){
+    const a=i*2.399963+tt*.035;
+    const r=.55+(i%29)*.055;
+    const z=((i*41)%100)/100-.5;
+    const p=proj([Math.cos(a)*r,Math.sin(a)*r,z*1.35]);
+    ctx.globalAlpha=.10;
+    ctx.fillStyle='rgba(148,163,184,.9)';
+    ctx.beginPath();ctx.arc(p[0],p[1],1.65*p[3],0,7);ctx.fill();
+  }
+  ctx.restore();
+  // selected 48 states
+  ctx.save();
+  for(let i=0;i<48;i++){
+    const a=i*2.399963-tt*.12;
+    const r=.36+(i%8)*.025;
+    const z=((i*13)%24)/24-.5;
+    const p=proj([Math.cos(a)*r,Math.sin(a)*r,z*.45]);
+    ctx.globalAlpha=.95;
+    ctx.fillStyle=i%3===0?'#60a5fa':i%3===1?'#34d399':'#fbbf24';
+    ctx.beginPath();ctx.arc(p[0],p[1],3.1*p[3],0,7);ctx.fill();
+  }
+  ctx.restore();
+  const y=H*.72, x0=W*.18,x1=W*.39,x2=W*.61,x3=W*.82;
+  arrow([x0,y],[x1,y],'rgba(251,191,36,.85)',2.2);
+  arrow([x1,y],[x2,y],'rgba(52,211,153,.85)',2.2);
+  arrow([x2,y],[x3,y],'rgba(192,132,252,.85)',2.2);
+  ctx.save();ctx.textAlign='center';ctx.font='14px ui-monospace,monospace';ctx.fillStyle='rgba(229,231,235,.96)';
+  ctx.fillText('(Q₄)³',x0,y-24);ctx.fillText('4096',x1,y-24);ctx.fillText('restricción',x2,y-24);ctx.fillText('P₄₈≅B₃',x3,y-24);
+  ctx.font='11px system-ui';ctx.fillStyle='rgba(156,163,175,.90)';
+  ctx.fillText('espacio total',x0,y+25);ctx.fillText('configuraciones',x1,y+25);ctx.fillText('MMᵀ=4I',x2,y+25);ctx.fillText('48 estados',x3,y+25);
+  ctx.restore();
+  drawTextBox(['Idea central','Un espacio grande se filtra por reglas locales.','El resultado no es arbitrario: aparece simetría global.','Caso n=4: P₄₈≅B₃ y Cay(B₃,S)≅Q₃□K₃,₃.'], W/2-285, H-190, 570);
+}
+
+function drawGeneral(){
+  const ns=[4,8,12,16];
+  const orbits=[2,3,4,5];
+  const labels=['P₄₈≅B₃','O₁ torsor S₈','60.614.400 tríadas','órbita uniforme'];
+  const nodes=ns.map((n,i)=>({id:'n='+n,p:[-3+i*2,0,0],color:i===0?'#c084fc':i===1?'#34d399':i===2?'#fbbf24':'#fb7185',info:orbits[i]+' órbitas · '+labels[i]}));
+  draw(nodes,[[0,1],[1,2],[2,3]],null,12);
+  const sc=nodes.map(n=>proj(n.p));
+  ctx.save();ctx.textAlign='center';ctx.font='12px ui-monospace,monospace';ctx.fillStyle='rgba(219,234,254,.95)';
+  sc.forEach((p,i)=>{ctx.fillText(orbits[i]+' órbitas',p[0],p[1]+34);ctx.fillText(labels[i],p[0],p[1]+52)});
+  ctx.restore();
+  drawTextBox(['Teorema general','n=4m produce m+1 órbitas bajo Sₙ.','Cada órbita queda clasificada por t=|A∩B∩C|.','|O_t| = n! / ((t!)⁴((m−t)!)⁴).','El complemento envía O_t ↔ O_{m−t}.'], W/2-300, H-190, 600);
+}
+
+function drawVenn(){
+  const patterns=[
+    {name:'O₀',atoms:[0,2,2,2,0,0,0,2],color:'#60a5fa',info:'sin triple intersección'},
+    {name:'O₁',atoms:[1,1,1,1,1,1,1,1],color:'#34d399',info:'uniforme · 8!'},
+    {name:'O₂',atoms:[2,0,0,0,2,2,2,0],color:'#fb7185',info:'dual de O₀'}
+  ];
+  const names=['ABC','AB','AC','BC','A','B','C','∅'];
+  patterns.forEach((pat,row)=>{
+    const y=-1.25+row*1.25;
+    const title={id:pat.name,p:[-3.35,y,0],color:pat.color,info:pat.info};
+    draw([title],[],null,12);
+    for(let i=0;i<8;i++){
+      const x=-2.25+i*.64;
+      const size=4+pat.atoms[i]*5;
+      const pp=proj([x,y,0]);
+      ctx.save();
+      ctx.globalAlpha=pat.atoms[i]===0?.18:.88;
+      ctx.fillStyle=pat.color;
+      ctx.beginPath();ctx.arc(pp[0],pp[1],size*pp[3],0,7);ctx.fill();
+      ctx.globalAlpha=1;ctx.strokeStyle='rgba(255,255,255,.45)';ctx.lineWidth=.8;ctx.stroke();
+      ctx.fillStyle='rgba(229,231,235,.92)';ctx.font='10px ui-monospace,monospace';ctx.textAlign='center';
+      ctx.fillText(String(pat.atoms[i]),pp[0],pp[1]+3);
+      if(row===0)ctx.fillText(names[i],pp[0],pp[1]-23);
+      ctx.restore();
+    }
+    const tx=proj([3.15,y,0]);
+    ctx.save();ctx.fillStyle='rgba(209,213,219,.9)';ctx.font='12px system-ui';ctx.textAlign='left';ctx.fillText(pat.info,tx[0],tx[1]+4);ctx.restore();
+  });
+  drawTextBox(['Átomos de Venn en n=8','O₀=(0,2,2,2,0,0,0,2).','O₁=(1,1,1,1,1,1,1,1): órbita uniforme, 40320=8!.','O₂=(2,0,0,0,2,2,2,0): dual de O₀.'], W/2-320, H-190, 640);
+}
+
+function drawDependencies(){
+  const nodes=[
+    {id:'Espacio',p:[0,2.15,0],color:'#60a5fa',info:'(Q₄)³ o 𝒯ₙ'},
+    {id:'Restricción',p:[0,1.25,0],color:'#34d399',info:'equilibrio + ortogonalidad'},
+    {id:'Hadamard',p:[0,.35,0],color:'#fbbf24',info:'MMᵀ=4I en n=4'},
+    {id:'P₄₈',p:[0,-.55,0],color:'#c084fc',info:'48 estados perfectos'},
+    {id:'B₃',p:[-1.45,-1.35,0],color:'#fb7185',info:'grupo hiperoctaédrico'},
+    {id:'Cayley',p:[-2.65,-2.05,0],color:'#fb7185',info:'Q₃□K₃,₃'},
+    {id:'Walsh/Aut',p:[-.25,-2.05,0],color:'#22d3ee',info:'verificaciones independientes'},
+    {id:'𝒯ₙ',p:[1.65,.35,0],color:'#34d399',info:'familia general'},
+    {id:'Órbitas',p:[2.55,-.45,0],color:'#60a5fa',info:'𝒯ₙ/Sₙ'},
+    {id:'t completo',p:[2.55,-1.25,0],color:'#fbbf24',info:'t=|A∩B∩C| clasifica'},
+    {id:'Dualidad',p:[2.55,-2.05,0],color:'#c084fc',info:'O_t↔O_{m−t}'}
+  ];
+  const edges=[[0,1],[1,2],[2,3],[3,4],[4,5],[4,6],[1,7],[7,8],[8,9],[9,10]];
+  draw(nodes,edges,null,10.5);
+  drawTextBox([
+    'Árbol de dependencias',
+    '1. Restricciones: equilibrio + ortogonalidad.',
+    '2. En n=4: MMᵀ=4I selecciona P₄₈.',
+    '3. P₄₈ se identifica con B₃ y su Cayley.',
+    '4. En general: 𝒯ₙ se clasifica por órbitas de Sₙ.',
+    '5. El invariante t es completo.'
+  ], W/2-315, H-205, 630);
+}
+
+function drawChain(){
+  const items=[
+    ['2/2',[-3.2,0,0],'#34d399','equilibrio binario'],
+    ['Δ(4,2)',[-1.9,0,0],'#60a5fa','octaedro'],
+    ['Hadamard',[-.55,0,0],'#fbbf24','MMᵀ=4I'],
+    ['B₃',[.85,0,0],'#c084fc','grupo de 48'],
+    ['Cayley',[2.1,0,0],'#fb7185','144 aristas'],
+    ['Relacional',[3.45,0,0],'#22d3ee','A⁻¹B']
+  ].map(x=>({id:x[0],p:x[1],color:x[2],info:x[3]}));
+  draw(items,[[0,1],[1,2],[2,3],[3,4],[4,5]],null,11)
+}
+function drawRelational(){
+  const items=[
+    ['Relaciones',[-3,0,0],'#22d3ee','grafo etiquetado'],
+    ['C(A,B)',[-1.55,0,0],'#34d399','comparación'],
+    ['B₃',[0,0,0],'#c084fc','grupo'],
+    ['P₄₈',[1.45,0,0],'#fbbf24','estados'],
+    ['Hadamard',[3,0,0],'#fb7185','MMᵀ=4I']
+  ].map(x=>({id:x[0],p:x[1],color:x[2],info:x[3]}));
+  draw(items,[[0,1],[1,2],[2,3],[3,4]],null,12)
+}
+function drawCompare(){
+  comparePhase+=.06;
+  const nodes=[
+    {id:'A',p:[-1.7,0,0],color:'#60a5fa',info:'estado de referencia'},
+    {id:'B',p:[1.7,0,0],color:'#fb7185',info:'estado observado'},
+    {id:'A⁻¹B',p:[0,1.25,0],color:'#34d399',info:'comparación / transformación'}
+  ];
+  const sc=draw(nodes,[],null,13);
+  arrow(sc[0],sc[2],'rgba(52,211,153,.88)',2.5);
+  arrow(sc[2],sc[1],'rgba(251,191,36,.85)',2.5);
+  drawTextBox(['Comparar no es AB.','Comparar es A⁻¹B.','A⁻¹ = invertir tu perspectiva.','Resultado = transformación.'], W/2-230, H/2+130, 460)
+}
+function drawEvidence(){
+  const nodes=[
+    {id:'Walsh',p:[-2.4,.8,0],color:'#22d3ee',info:'firma espectral'},
+    {id:'z=39.84',p:[0,.8,0],color:'#fbbf24',info:'contra aleatorio'},
+    {id:'controles',p:[2.4,.8,0],color:'#34d399',info:'z mínimo 8.78'},
+    {id:'Aut=3456',p:[-1.2,-1,0],color:'#c084fc',info:'automorfismos'},
+    {id:'2 órbitas',p:[1.2,-1,0],color:'#fb7185',info:'aristas internas/externas protegidas'}
+  ];
+  draw(nodes,[[0,1],[1,2],[1,3],[1,4]],null,12);
+  drawTextBox(['Resultados verificados clave:', '58.5% energía Walsh en k=6', 'z-score 39.84', 'control más cercano z=8.78', 'Aut(Q₃□K₃,₃)=3456', 'aristas en 2 órbitas: 72+72'], W/2-235, H/2+125, 470)
+}
+function drawQ4(){
+  const nodes=[];
+  for(let layer=0;layer<3;layer++){
+    const z=(layer-1)*.9;
+    for(let i=0;i<4;i++)for(let j=0;j<4;j++){
+      nodes.push({id:`L${layer}:${i}${j}`,p:[(i-1.5)*.75,(j-1.5)*.75,z],color:layer===0?'#60a5fa':layer===1?'#fbbf24':'#fb7185',info:`capa ${layer}, posición Q₄`})
+    }
+  }
+  const edges=[];
+  for(let layer=0;layer<3;layer++){
+    const off=layer*16;
+    for(let i=0;i<4;i++)for(let j=0;j<4;j++){
+      const a=off+i*4+j;
+      if(i<3)edges.push([a,off+(i+1)*4+j]);
+      if(j<3)edges.push([a,off+i*4+j+1]);
+    }
+  }
+  draw(nodes,edges,null,4.2);
+  drawTextBox(['Indexación natural:', '48 = 16 × 3', '16 = Q₄ = Q₃ × P₂', '3 capas internas', 'Q₄ = Q₃ × P₂'], W/2-235, H/2+125, 470)
+}
+
+
+
+function drawTesseracts(){
+  // Tres Q4 acoplados sobre un mismo origen.
+  // No se muestran como tres objetos separados, sino como tres sistemas
+  // de coordenadas de un único estado (H1,H2,H3) en (Q4)^3.
+
+  const tt = performance.now()*0.001;
+  const colors=['#60a5fa','#34d399','#fbbf24'];
+  const names=['Q₄¹ / H₁','Q₄² / H₂','Q₄³ / H₃'];
+  const angles=[-Math.PI/2, Math.PI/6, Math.PI*5/6];
+
+  function q4Vertices(k){
+    const verts=[];
+    const a0=angles[k] + Math.sin(tt*.35+k)*.08;
+    const ca=Math.cos(a0), sa=Math.sin(a0);
+
+    for(let b0 of[-1,1])for(let b1 of[-1,1])for(let b2 of[-1,1])for(let b3 of[-1,1]){
+      // Proyección 4D -> 3D.
+      // b3 es la cuarta dirección: desplaza el cubo interno respecto al externo.
+      let x=b0*.55 + b3*.24;
+      let y=b1*.55 - b3*.16;
+      let z=b2*.50 + b3*.18;
+
+      // Orientación propia para cada Q4, compartiendo el mismo centro.
+      const xr=x*ca-y*sa;
+      const yr=x*sa+y*ca;
+      const zr=z + (k-1)*.03;
+
+      verts.push({
+        p:[xr,yr,zr],
+        raw:[b0,b1,b2,b3],
+        color:colors[k],
+        id:names[k]+':'+(b0>0?1:0)+(b1>0?1:0)+(b2>0?1:0)+(b3>0?1:0),
+        info:names[k]+' · vértice de Q₄'
+      });
+    }
+    return verts;
+  }
+
+  function q4Edges(verts){
+    const e=[];
+    for(let i=0;i<verts.length;i++){
+      for(let j=i+1;j<verts.length;j++){
+        let diff=0;
+        for(let k=0;k<4;k++) if(verts[i].raw[k]!==verts[j].raw[k]) diff++;
+        if(diff===1) e.push([i,j]);
+      }
+    }
+    return e;
+  }
+
+  function drawLocalEdges(verts,edges,color,alpha,w){
+    const sc=verts.map(v=>proj(v.p));
+    edges.map((e,i)=>({e,z:(sc[e[0]][2]+sc[e[1]][2])/2}))
+      .sort((a,b)=>a.z-b.z)
+      .forEach(o=>{
+        line(sc[o.e[0]],sc[o.e[1]],color.replace('ALPHA',alpha),w);
+      });
+    return sc;
+  }
+
+  function drawLocalNodes(verts,sc,color){
+    verts.map((v,i)=>({v,i,z:sc[i][2]}))
+      .sort((a,b)=>a.z-b.z)
+      .forEach(o=>{
+        const s=sc[o.i];
+        ctx.beginPath();
+        ctx.fillStyle=color;
+        ctx.globalAlpha=.82;
+        ctx.arc(s[0],s[1],4.6*s[3],0,7);
+        ctx.fill();
+        ctx.globalAlpha=1;
+        ctx.strokeStyle='rgba(255,255,255,.48)';
+        ctx.lineWidth=.8;
+        ctx.stroke();
+
+        let dx=mx-s[0],dy=my-s[1];
+        if(dx*dx+dy*dy<100)hover=o.v;
+      });
+  }
+
+  // Nube simbólica de 4096 configuraciones.
+  // No se dibujan 4096 puntos reales para evitar ruido visual.
+  ctx.save();
+  for(let i=0;i<160;i++){
+    const a=i*2.399963 + tt*.04;
+    const r=.95 + (i%17)*.017;
+    const z=((i*37)%100)/100-.5;
+    const p=proj([Math.cos(a)*r,Math.sin(a)*r,z*.72]);
+    ctx.globalAlpha=.055;
+    ctx.fillStyle='rgba(229,231,235,.8)';
+    ctx.beginPath();
+    ctx.arc(p[0],p[1],1.8*p[3],0,7);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // 48 estados perfectos: núcleo brillante.
+  ctx.save();
+  for(let i=0;i<48;i++){
+    const a=i*2.399963 - tt*.10;
+    const r=.31 + (i%6)*.018;
+    const z=((i*11)%20)/20-.5;
+    const p=proj([Math.cos(a)*r,Math.sin(a)*r,z*.34]);
+    ctx.globalAlpha=.86;
+    ctx.fillStyle=i%3===0?'#60a5fa':i%3===1?'#34d399':'#fbbf24';
+    ctx.beginPath();
+    ctx.arc(p[0],p[1],2.8*p[3],0,7);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Dibujar los tres teseractos sobre el mismo origen.
+  for(let k=0;k<3;k++){
+    const verts=q4Vertices(k);
+    const edges=q4Edges(verts);
+    const edgeColor=k===0?'rgba(96,165,250,ALPHA)':k===1?'rgba(52,211,153,ALPHA)':'rgba(251,191,36,ALPHA)';
+    const sc=drawLocalEdges(verts,edges,edgeColor,.32,1.1);
+    drawLocalNodes(verts,sc,colors[k]);
+
+    // Etiqueta del teseracto.
+    const pp=proj([Math.cos(angles[k])*1.55,Math.sin(angles[k])*1.55,.32]);
+    ctx.save();
+    ctx.fillStyle=colors[k];
+    ctx.font='14px ui-monospace,monospace';
+    ctx.textAlign='center';
+    ctx.fillText(names[k],pp[0],pp[1]-8);
+    ctx.fillStyle='rgba(209,213,219,.86)';
+    ctx.font='11px ui-monospace,monospace';
+    ctx.fillText('16 vértices',pp[0],pp[1]+9);
+    ctx.restore();
+  }
+
+  // Núcleo común: H1,H2,H3 seleccionan un estado.
+  const triad=[
+    {id:'H₁',p:[-.38,.23,.42],color:'#60a5fa',info:'primer bloque / primer Q₄'},
+    {id:'H₂',p:[ .38,.23,.42],color:'#34d399',info:'segundo bloque / segundo Q₄'},
+    {id:'H₃',p:[0,-.43,.42],color:'#fbbf24',info:'tercer bloque / tercer Q₄'},
+    {id:'P₄₈',p:[0,0,.78],color:'#c084fc',info:'48 estados perfectos'}
+  ];
+  draw(triad,[[0,1],[1,2],[2,0],[3,0],[3,1],[3,2]],null,10.5);
+
+  // Texto central: origen compartido.
+  const pc=proj([0,0,-.82]);
+  ctx.save();
+  ctx.textAlign='center';
+  ctx.font='13px ui-monospace,monospace';
+  ctx.fillStyle='rgba(219,234,254,.95)';
+  ctx.fillText('origen común',pc[0],pc[1]);
+  ctx.font='11px system-ui';
+  ctx.fillStyle='rgba(156,163,175,.88)';
+  ctx.fillText('un estado = (H₁,H₂,H₃)',pc[0],pc[1]+17);
+  ctx.restore();
+
+  // Pipeline inferior en coordenadas de pantalla para que no se corte.
+  const y=H*.73;
+  const margin=Math.max(120,Math.min(190,W*.18));
+  const x0=margin;
+  const x1=W*.38;
+  const x2=W*.62;
+  const x3=W-margin;
+
+  function sArrow(xa,ya,xb,yb,col){
+    ctx.save();
+    ctx.strokeStyle=col;
+    ctx.lineWidth=2.2;
+    ctx.beginPath();ctx.moveTo(xa,ya);ctx.lineTo(xb,yb);ctx.stroke();
+    const ang=Math.atan2(yb-ya,xb-xa),len=10;
+    ctx.beginPath();
+    ctx.moveTo(xb,yb);
+    ctx.lineTo(xb-len*Math.cos(ang-.45),yb-len*Math.sin(ang-.45));
+    ctx.moveTo(xb,yb);
+    ctx.lineTo(xb-len*Math.cos(ang+.45),yb-len*Math.sin(ang+.45));
+    ctx.stroke();
+    ctx.restore();
+  }
+  sArrow(x0,y,x1,y,'rgba(251,191,36,.85)');
+  sArrow(x1,y,x2,y,'rgba(52,211,153,.85)');
+  sArrow(x2,y,x3,y,'rgba(192,132,252,.85)');
+
+  ctx.save();
+  ctx.textAlign='center';
+  ctx.font='13px ui-monospace,monospace';
+  ctx.fillStyle='rgba(229,231,235,.96)';
+  ctx.fillText('(Q₄)³',x0,y-22);
+  ctx.fillText('16³ = 4096',x1,y-22);
+  ctx.fillText('MMᵀ = 4I',x2,y-22);
+  ctx.fillText('P₄₈',x3,y-22);
+
+  ctx.font='11px system-ui';
+  ctx.fillStyle='rgba(156,163,175,.90)';
+  ctx.fillText('3 teseractos acoplados',x0,y+24);
+  ctx.fillText('espacio 12D discreto',x1,y+24);
+  ctx.fillText('equilibrio + ortogonalidad',x2,y+24);
+  ctx.fillText('48 estados',x3,y+24);
+  ctx.restore();
+
+  const bw=Math.min(620,W-44);
+  drawTextBox([
+    'Tres teseractos con origen común',
+    'H₁ ∈ Q₄¹, H₂ ∈ Q₄², H₃ ∈ Q₄³',
+    '(H₁,H₂,H₃) ∈ Q₄¹ × Q₄² × Q₄³',
+    '16 × 16 × 16 = 4096 configuraciones',
+    'MMᵀ=4I selecciona exactamente 48'
+  ], (W-bw)/2, H-190, bw);
+}
+
+
+function drawFinal(){
+  // Clear visual center: direct construction on the left,
+  // relational reconstruction on the right, triad in the center.
+  const left = [
+    {id:'Equilibrio', p:[-3.2, 1.55, 0], color:'#34d399', info:'regla 2/2'},
+    {id:'Octaedro',   p:[-3.2, 0.75, 0], color:'#60a5fa', info:'Δ(4,2)'},
+    {id:'Hadamard',   p:[-3.2,-0.05, 0], color:'#fbbf24', info:'MMᵀ=4I'},
+    {id:'B₃',         p:[-3.2,-0.85, 0], color:'#c084fc', info:'grupo hiperoctaédrico'},
+    {id:'Cayley',     p:[-3.2,-1.65, 0], color:'#fb7185', info:'Q₃□K₃,₃'}
+  ];
+
+  const right = [
+    {id:'Relaciones', p:[ 3.2, 1.55, 0], color:'#22d3ee', info:'red de comparaciones'},
+    {id:'A⁻¹B',       p:[ 3.2, 0.75, 0], color:'#34d399', info:'comparador'},
+    {id:'B₃',         p:[ 3.2,-0.05, 0], color:'#c084fc', info:'grupo reconstruido'},
+    {id:'P₄₈',        p:[ 3.2,-0.85, 0], color:'#fbbf24', info:'48 estados'},
+    {id:'Hadamard',   p:[ 3.2,-1.65, 0], color:'#fb7185', info:'MMᵀ=4I'}
+  ];
+
+  const triad = [
+    {id:'H₁', p:[-0.78, 0.55, 0], color:'#60a5fa', info:'primer bloque'},
+    {id:'H₂', p:[ 0.78, 0.55, 0], color:'#34d399', info:'segundo bloque'},
+    {id:'H₃', p:[ 0.00,-0.80, 0], color:'#fbbf24', info:'tercer bloque'},
+    {id:'P₄₈',p:[ 0.00, 1.35, 0], color:'#c084fc', info:'conjunto de 48 tríadas'}
+  ];
+
+  // Draw chains.
+  draw(left,  [[0,1],[1,2],[2,3],[3,4]], null, 9.5);
+  draw(right, [[0,1],[1,2],[2,3],[3,4]], null, 9.5);
+
+  // Draw central triad.
+  draw(triad, [[0,1],[1,2],[2,0],[3,0],[3,1],[3,2]], null, 12);
+
+  // Project key points to draw bridges and labels.
+  const lHad = proj(left[2].p);
+  const rB3  = proj(right[2].p);
+  const pTriad = proj(triad[3].p);
+  const pCenter = proj([0,0.05,0]);
+
+  arrow(lHad, pTriad, 'rgba(251,191,36,.75)', 2.0);
+  arrow(rB3, pTriad, 'rgba(34,211,238,.75)', 2.0);
+
+  ctx.save();
+  ctx.fillStyle='rgba(229,231,235,.96)';
+  ctx.font='14px system-ui';
+  ctx.textAlign='center';
+  ctx.fillText('Cadena directa', proj([-3.2,2.15,0])[0], proj([-3.2,2.15,0])[1]);
+  ctx.fillText('Cadena relacional', proj([3.2,2.15,0])[0], proj([3.2,2.15,0])[1]);
+  ctx.font='13px ui-monospace,monospace';
+  ctx.fillStyle='rgba(219,234,254,.94)';
+  ctx.fillText('Clasificación general + caso excepcional n=4', W/2, H/2+145);
+  ctx.fillText('𝒯ₙ/Sₙ={0,…,m}  ·  P₄₈≅B₃  ·  Cay(B₃,S)≅Q₃□K₃,₃', W/2, H/2+168);
+  ctx.restore();
+
+  drawTextBox([
+    'Qué hemos demostrado',
+    '1. 𝒯ₙ define tríadas equilibradas y ortogonales.',
+    '2. 𝒯ₙ/Sₙ = {0,…,m}.',
+    '3. t=|A∩B∩C| clasifica completamente las órbitas.',
+    '4. |O_t| = n!/((t!)⁴((m−t)!)⁴).',
+    '5. El complemento induce O_t ↔ O_{m−t}.',
+    '6. En n=4: P₄₈≅B₃ y Cay(B₃,S)≅Q₃□K₃,₃.'
+  ], W/2-315, H-205, 630);
+}
+
+function formula(){
+  if(!document.getElementById('formulaToggle').checked)return;
+  const txt={
+    intro:'(Q₄)³ = 4096 → MMᵀ=4I → P₄₈≅B₃',
+    general:'n=4m; |O_t|=n!/((t!)⁴((m−t)!)⁴); O_t↔O_{m−t}',
+    venn:'átomos=(t,m−t,m−t,m−t,t,t,t,m−t); uniforme ⇔ n≡0 mod 8',
+    dependencies:'dependencias: restricciones → Hadamard/P₄₈ y restricciones → 𝒯ₙ/Sₙ',
+    chain:'2/2 → Δ(4,2) → Hadamard → B₃ → Cayley → C(A,B)',
+    octa:'u⊥ ∩ {−1,+1}⁴ = Δ(4,2) ≅ octaedro',
+    hadamard:'MMᵀ=4I ⇔ P₄₈ ; P₄₈≅B₃',
+    tetra:'8 familias = T ∪ (−T)',
+    dual:'caras(octaedro) ↔ vértices(cubo) = Q₃',
+    cayley:'Cay(B₃,S) ≅ Q₃□K₃,₃ ; |V|=48, |E|=144',
+    evidence:'Walsh k=6: 58.5%, z=39.84 ; Aut=3456 ; 2 órbitas',
+    q4:'48 = Q₄ × 3 capas ; Q₄ = Q₃ × P₂',
+    tesseracts:'(Q₄)³ = 4096 configuraciones → restricciones → 48 estados',
+    relational:'C(A,B)=A⁻¹B ; C(A,B)C(B,D)=C(A,D)',
+    compare:'C(LA,LB)=(LA)⁻¹(LB)=A⁻¹B',
+    final:'relación pura → forma ; comparación orientada → grupo ; raíz → estados'
+  }[mode];
+  ctx.fillStyle='rgba(219,234,254,.94)';
+  ctx.font='15px ui-monospace,monospace';ctx.textAlign='center';
+  ctx.fillText(txt,W/2,H-36)
+}
+function legends(){
+  const l={
+    intro:"<b>Espacio → 48</b><br>Visualiza el filtro central: 4096 configuraciones se reducen a 48 estados perfectos.",
+    general:"<b>Marco general</b><br>La teoría se formula para n=4m mediante órbitas de Sₙ clasificadas por átomos de Venn.",
+    venn:"<b>Átomos de Venn</b><br>La órbita uniforme de n=8 se ve como ocho regiones de tamaño 1.",
+    dependencies:"<b>Dependencias</b><br>Árbol lógico: qué resultados dependen de las restricciones, de Hadamard, de B₃ y de la clasificación general.",
+    chain:"<b>Cadena n=4</b><br>Vista general del caso excepcional de 4 dimensiones.", 
+    octa:"<b>Octaedro Δ(4,2)</b><br>6 bloques equilibrados 2/2.",
+    hadamard:"<b>Hadamard/B₃</b><br>MMᵀ=4I selecciona 48 estados.",
+    tetra:"<b>T ∪ (−T)</b><br>8 familias como dos tetraedros opuestos.",
+    dual:"<b>Cubo dual Q₃</b><br>8 caras/familias como vértices del cubo.",
+    cayley:"<b>Cayley B₃</b><br><span class='dot' style='background:#fb7185'></span>internas: flips<br><span class='dot' style='background:#60a5fa'></span>externas: swaps<br>144 = 48·6/2.",
+    evidence:"<b>Resultados verificados</b><br>Walsh-Hadamard, controles jerárquicos, automorfismos y órbitas de aristas.",
+    q4:"<b>Q₄ × 3 capas</b><br>Indexación natural: 48 = 16×3.",
+    tesseracts:"<b>Tres teseractos</b><br>Los tres Q₄ comparten origen: H₁,H₂,H₃ forman un punto de (Q₄)³. Las reglas seleccionan 48.",
+    relational:"<b>Modo relacional</b><br>Relaciones + raíz reconstruyen B₃, P₄₈ y Hadamard.",
+    compare:"<b>Comparador A⁻¹B</b><br>Comparar = A⁻¹B.",
+    final:"<b>Resumen final</b><br>La cadena directa y la cadena inversa reconstruyen la misma estructura."
+  }[mode];
+  legend.innerHTML=l
+}
+function loop(){
+  ctx.clearRect(0,0,W,H);
+  if(document.getElementById('autorot').checked&&!drag)ry+=.004;
+  ctx.strokeStyle='rgba(148,163,184,.11)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.arc(W/2,H/2,Math.min(W,H)*.23*zoom,0,7);ctx.stroke();
+
+  if(mode==='intro')drawIntro();
+  if(mode==='general')drawGeneral();
+  if(mode==='venn')drawVenn();
+  if(mode==='dependencies')drawDependencies();
+  if(mode==='chain')drawChain();
+  if(mode==='octa')draw(octa,octaEdges,null,10);
+  if(mode==='hadamard'){draw(octa,octaEdges,null,9);draw(cube,cubeEdges,null,6)}
+  if(mode==='tetra')draw(cube,tetraEdges,null,10);
+  if(mode==='dual')draw(cube,cubeEdges,null,10);
+  if(mode==='cayley')draw(cay,cayEdges,cayTypes,5.2);
+  if(mode==='evidence')drawEvidence();
+  if(mode==='q4')drawQ4();
+  if(mode==='tesseracts')drawTesseracts();
+  if(mode==='relational')drawRelational();
+  if(mode==='compare')drawCompare();
+  if(mode==='final')drawFinal();
+  formula();legends();
+  if(observerPhase){
+    ctx.save();
+    ctx.fillStyle='rgba(34,211,238,.9)';
+    ctx.font='12px ui-monospace,monospace';
+    ctx.textAlign='center';
+    ctx.fillText('Observador cambiado: C(A,B)=A⁻¹B se conserva',W/2,70);
+    ctx.restore();
+  }
+  if(hover){
+    tip.style.display='block';tip.style.left=mx+14+'px';tip.style.top=my+14+'px';
+    tip.innerHTML='<b>'+hover.id+'</b><br>'+hover.info
+  }else tip.style.display='none';
+  requestAnimationFrame(loop)
+}
+loop();
+</script>
+</body>
+</html>
