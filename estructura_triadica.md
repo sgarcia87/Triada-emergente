@@ -970,16 +970,6 @@ donde \(p_T,p_U\in S_8\) son las permutaciones asociadas. Satisface \(C(U,V)C(T,
 - El torsor de \(S_8\) en la órbita uniforme de \(n=8\).
 - La verificación independiente de \(n=12\).
 
-## Lo no afirmado
-
-No se afirma:
-
-- una ley física;
-- una teoría de la consciencia;
-- una conexión demostrada con numerología;
-- que los objetos individuales sean nuevos;
-- que el cuadrado de Khajuraho sea una simetría del sistema.
-
 El trabajo se sitúa en combinatoria, geometría discreta, teoría de grafos y acciones de grupos.
 
 La posible novedad no está en \(B_3\), \(S_n\), Hadamard, Johnson o Cayley por separado, sino en la cadena exacta que los conecta a partir de la selección triádica equilibrada.
